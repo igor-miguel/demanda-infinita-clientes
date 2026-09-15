@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demanda Infinita · Clientes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --green:#008E43; --green-light:#12B85E; --bg:#F8F7F4; --card:#ECEAE5;
+    --text:#111111; --gray:#6B6B6B; --line:#D8D5CE;
+    --red:#C4423A; --amber:#C98A1D;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.brand{font-family:'Plus Jakarta Sans',sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:var(--green);}
+  button{font-family:'Inter',sans-serif;cursor:pointer;border:none;border-radius:10px;padding:10px 16px;font-weight:600;font-size:.92rem;}
+  .btn-primary{background:var(--green);color:#fff;}
+  .btn-primary:hover{background:var(--green-light);}
+  .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line);}
+  .btn-ghost:hover{background:var(--card);}
+  .btn-sm{padding:6px 12px;font-size:.82rem;}
+  input,select{font-family:'Inter',sans-serif;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:.92rem;width:100%;}
+  input:focus,select:focus{outline:2px solid var(--green-light);outline-offset:1px;}
+  label{font-size:.78rem;color:var(--gray);font-weight:600;display:block;margin-bottom:4px;}
+
+  /* ---- login ---- */
+  #tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-box{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:36px 32px;width:100%;max-width:360px;}
+  .login-box h1{font-size:1.3rem;margin:0 0 4px;}
+  .login-box p.sub{color:var(--gray);font-size:.88rem;margin:0 0 24px;}
+  .login-box .campo{margin-bottom:14px;}
+  .login-box button{width:100%;margin-top:6px;padding:11px;}
+  .erro{color:var(--red);font-size:.82rem;margin-top:10px;display:none;}
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--green);font-weight:600;}
+
+  /* ---- shell ---- */
+  #app{display:none;min-height:100vh;}
+  header.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;}
+  header.topbar .brand{font-size:1.05rem;font-weight:700;}
+  header.topbar .brand span{color:var(--green);}
+  .userbox{display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--gray);}
+  main{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* ---- stepper ---- */
+  .stepper{display:flex;gap:6px;margin:18px 0 26px;flex-wrap:wrap;}
+  .step{flex:1;min-width:120px;background:var(--card);border-radius:10px;padding:12px 14px;border:2px solid transparent;}
+  .step.done{background:#E4F5EB;border-color:var(--green-light);}
+  .step.atual{background:#fff;border-color:var(--green);box-shadow:0 2px 8px rgba(0,142,67,.12);}
+  .step .n{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--gray);}
+  .step.done .n{color:var(--green);}
+  .step .t{font-weight:600;font-size:.88rem;margin-top:2px;}
+
+  /* ---- cards ---- */
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:20px;}
+  .card h2{font-size:1.02rem;margin:0 0 4px;}
+  .card .desc{color:var(--gray);font-size:.85rem;margin:0 0 16px;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+
+  /* ---- semaforo / progress ---- */
+  .barra{height:8px;background:var(--card);border-radius:5px;overflow:hidden;margin:8px 0;}
+  .barra > div{height:100%;background:var(--green);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.74rem;font-weight:700;}
+  .badge.ok{background:#E4F5EB;color:var(--green);}
+  .badge.alerta{background:#FBF0DC;color:var(--amber);}
+  .badge.critico{background:#FBE7E5;color:var(--red);}
+
+  /* ---- list items ---- */
+  .item-lista{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);gap:10px;}
+  .item-lista:last-child{border-bottom:none;}
+  .item-lista .txt{font-size:.88rem;}
+  .item-lista .txt small{display:block;color:var(--gray);font-size:.76rem;margin-top:2px;}
+  .vazio{color:var(--gray);font-size:.85rem;padding:14px 0;text-align:center;}
+
+  .form-inline{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .form-inline input{flex:1;min-width:140px;}
+
+  /* ---- admin lista de clientes ---- */
+  .cliente-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+  .cliente-row:hover{border-color:var(--green-light);}
+  .cliente-row .nome{font-weight:700;font-size:.98rem;}
+  .cliente-row .meta{color:var(--gray);font-size:.8rem;margin-top:2px;}
+  .cliente-row .stats{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;font-size:.8rem;}
+  .cliente-row .stats b{font-weight:700;}
+
+  /* ---- modal ---- */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(17,17,17,.45);z-index:20;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
+  .modal{background:var(--bg);border-radius:var(--radius);max-width:640px;width:100%;padding:0;margin-top:10px;}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--line);background:#fff;border-radius:var(--radius) var(--radius) 0 0;}
+  .modal-head h2{margin:0;font-size:1.1rem;}
+  .modal-body{padding:22px 24px;}
+  .fechar{background:transparent;border:none;font-size:1.3rem;color:var(--gray);padding:2px 8px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:520px){.grid2{grid-template-columns:1fr;}}
+
+  #carregando{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--gray);}
+</style>
+</head>
+<body>
+
+<div id="carregando">carregando…</div>
+
+<div id="tela-login" style="display:none">
+  <div class="login-box">
+    <div class="kicker">Método Demanda Infinita®</div>
+    <h1>Painel de Clientes</h1>
+    <p class="sub">Entre com o e-mail e senha que você recebeu.</p>
+    <form id="form-login">
+      <div class="campo">
+        <label>E-mail</label>
+        <input type="email" id="login-email" required autocomplete="username">
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="login-senha" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary">Entrar</button>
+      <div class="erro" id="login-erro"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">Demanda <span>Infinita</span> · Clientes</div>
+    <div class="userbox">
+      <span id="user-nome"></span>
+      <button class="btn-ghost btn-sm" id="btn-logout">Sair</button>
+    </div>
+  </header>
+  <main id="main-cliente" style="display:none"></main>
+  <main id="main-admin" style="display:none"></main>
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modal-titulo">Cliente</h2>
+      <button class="fechar" id="modal-fechar">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://okolawlvmfyxzvnnpvtv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_IsQdhzWIou3tBX9qxak1VQ_m-wEHCFZ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let PERFIL = null;   // { id, cliente_id, role, nome }
+let ETAPAS = [];     // lista fixa, ordenada
+
+function segundaFeira(d){
+  const dt = new Date(d);
+  const dia = dt.getDay(); // 0=domingo
+  const diff = dia === 0 ? -6 : 1 - dia;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+function fmtData(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function isoHoje(){ return new Date().toISOString().slice(0,10); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- boot ----------
+async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){
+    document.getElementById('carregando').style.display='none';
+    document.getElementById('tela-login').style.display='flex';
+    return;
+  }
+  await carregarPerfilEIniciar();
+}
+
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const erroEl = document.getElementById('login-erro');
+  erroEl.style.display='none';
+  const { error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if(error){
+    erroEl.textContent = 'E-mail ou senha incorretos.';
+    erroEl.style.display='block';
+    return;
+  }
+  document.getElementById('tela-login').style.display='none';
+  document.getElementById('carregando').style.display='flex';
+  await carregarPerfilEIniciar();
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+async function carregarPerfilEIniciar(){
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: perfil, error } = await sb.from('cli_perfis').select('*').eq('id', user.id).maybeSingle();
+  if(error || !perfil){
+    document.getElementById('carregando').textContent = 'Seu login não está vinculado a nenhum perfil neste painel. Fale com o Igor.';
+    return;
+  }
+  PERFIL = perfil;
+  const { data: etapas } = await sb.from('cli_etapas').select('*').order('ordem');
+  ETAPAS = etapas || [];
+
+  document.getElementById('carregando').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('user-nome').textContent = perfil.nome || user.email;
+
+  if(perfil.role === 'admin'){
+    document.getElementById('main-admin').style.display='block';
+    document.getElementById('main-cliente').style.display='none';
+    await renderAdmin();
+  } else {
+    document.getElementById('main-cliente').style.display='block';
+    document.getElementById('main-admin').style.display='none';
+    await renderCliente(perfil.cliente_id);
+  }
+}
+
+// ================= VISÃO CLIENTE =================
+async function renderCliente(clienteId){
+  const el = document.getElementById('main-cliente');
+  if(!clienteId){
+    el.innerHTML = '<div class="card"><p class="vazio">Seu perfil ainda não está vinculado a um cliente. Fale com o Igor.</p></div>';
+    return;
+  }
+  const { data: cliente } = await sb.from('cli_clientes').select('*').eq('id', clienteId).single();
+  const { data: progresso } = await sb.from('cli_progresso').select('*').eq('cliente_id', clienteId);
+  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
+  const { data: posts } = await sb.from('cli_posts').select('*').eq('cliente_id', clienteId).eq('semana_ref', seg).order('data');
+  const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('cliente_id', clienteId).eq('status','pendente').order('pedido_em');
+
+  el.innerHTML = `
+    <h1>Olá, ${escapeHtml(cliente.nome)}</h1>
+    <p style="color:var(--gray);margin-top:-8px">${escapeHtml(cliente.empresa||'')} ${cliente.nivel ? '· '+escapeHtml(cliente.nivel) : ''}</p>
+    ${renderStepper(progresso)}
+    <div class="card" id="card-semana"></div>
+    <div class="card" id="card-pendencias"></div>
+  `;
+  renderCardSemana(clienteId, cliente, posts||[]);
+  renderCardPendencias(clienteId, pendencias||[], false);
+}
+
+function renderStepper(progresso){
+  const concluidas = new Set((progresso||[]).filter(p=>p.concluida_em).map(p=>p.etapa_id));
+  let atualAchada = false;
+  const steps = ETAPAS.map((et,i) => {
+    const done = concluidas.has(et.id);
+    let classe = '';
+    if(done) classe = 'done';
+    else if(!atualAchada){ classe = 'atual'; atualAchada = true; }
+    return `<div class="step ${classe}">
+      <div class="n">Etapa ${i+1}${done?' · concluída':''}</div>
+      <div class="t">${escapeHtml(et.nome)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="stepper">${steps}</div>`;
+}
+
+function renderCardSemana(clienteId, cliente, posts){
+  const meta = cliente.meta_semanal || 4;
+  const feito = posts.length;
+  const pct = Math.min(100, Math.round((feito/meta)*100));
+  const lista = posts.length
+    ? posts.map(p => `<div class="item-lista"><div class="txt">${fmtData(p.data)} ${p.link ? '· <a href="'+escapeHtml(p.link)+'" target="_blank">ver post</a>' : ''}</div></div>`).join('')
+    : '<div class="vazio">Nenhum post registrado nesta semana ainda.</div>';
+
+  document.getElementById('card-semana').innerHTML = `
+    <div class="row-between">
+      <div>
+        <h2>Checklist da semana</h2>
+        <p class="desc">Meta: ${meta}x por semana — ${feito} de ${meta} feitos</p>
+      </div>
+    </div>
+    <div class="barra"><div style="width:${pct}%"></div></div>
+    ${lista}
+    <form class="form-inline" id="form-post">
+      <input type="date" id="post-data" value="${isoHoje()}" required>
+      <input type="url" id="post-link" placeholder="Link do post no LinkedIn" required>
+      <button type="submit" class="btn-primary btn-sm">Registrar post</button>
+    </form>
+  `;
+  document.getElementById('form-post').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = document.getElementById('post-data').value;
+    const link = document.getElementById('post-link').value.trim();
+    const semana_ref = segundaFeira(new Date(data+'T00:00:00')).toISOString().slice(0,10);
+    const { error } = await sb.from('cli_posts').insert({ cliente_id: clienteId, data, link, semana_ref });
+    if(error){ alert('Não deu pra salvar: '+error.message); return; }
+    renderCliente(clienteId);
+  });
+}
+
+function renderCardPendencias(clienteId, pendencias, isAdmin){
+  const lista = pendencias.length
+    ? pendencias.map(p => `<div class="item-lista">
+        <div class="txt">${escapeHtml(p.item)}<small>pedido em ${new Date(p.pedido_em).toLocaleDateString('pt-BR')}</small></div>
+        ${isAdmin ? '' : `<button class="btn-ghost btn-sm" onclick="marcarEnviado(${p.id}, ${clienteId}, ${isAdmin})">Marquei como enviado</button>`}
+      </div>`).join('')
+    : '<div class="vazio">Nenhuma pendência agora. 🎉</div>';
+  document.getElementById('card-pendencias').innerHTML = `
+    <h2>O que falta você me enviar</h2>
+    <p class="desc">Material que eu preciso pra continuar a produção.</p>
+    ${lista}
+  `;
+}
+
+async function marcarEnviado(id, clienteId, isAdmin){
+  const { error } = await sb.from('cli_materiais_pendentes').update({ status:'recebido', recebido_em: new Date().toISOString() }).eq('id', id);
+  if(error){ alert('Erro: '+error.message); return; }
+  if(isAdmin) abrirDetalheCliente(clienteId);
+  else renderCliente(clienteId);
+}
+
+// ================= VISÃO ADMIN =================
+async function renderAdmin(){
+  const el = document.getElementById('main-admin');
+  el.innerHTML = `
+    <div class="row-between">
+      <h1>Clientes</h1>
+      <button class="btn-primary" id="btn-novo-cliente">+ Novo cliente</button>
+    </div>
+    <div id="lista-clientes"><p class="vazio">carregando…</p></div>
+  `;
+  document.getElementById('btn-novo-cliente').addEventListener('click', () => abrirFormNovoCliente());
+  await carregarListaClientes();
+}
+
+async function carregarListaClientes(){
+  const { data: clientes } = await sb.from('cli_clientes').select('*').order('nome');
+  const { data: progresso } = await sb.from('cli_progresso').select('*');
+  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
+  const { data: posts } = await sb.from('cli_posts').select('*').eq('semana_ref', seg);
+  const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('status','pendente');
+
+  const wrap = document.getElementById('lista-clientes');
+  if(!clientes || !clientes.length){
+    wrap.innerHTML = '<p class="vazio">Nenhum cliente cadastrado ainda.</p>';
+    return;
+  }
+
+  wrap.innerHTML = clientes.map(c => {
+    const meta = c.meta_semanal || 4;
+    const feito = (posts||[]).filter(p=>p.cliente_id===c.id).length;
+    const pendAbertas = (pendencias||[]).filter(p=>p.cliente_id===c.id).length;
+    const concluidas = new Set((progresso||[]).filter(p=>p.concluida_em && p.cliente_id===c.id).map(p=>p.etapa_id));
+    const etapaAtual = ETAPAS.find(e => !concluidas.has(e.id)) || ETAPAS[ETAPAS.length-1];
+
+    let badgeClasse = 'ok', badgeTxt = 'em dia';
+    if(feito === 0){ badgeClasse='critico'; badgeTxt='parado essa semana'; }
+    else if(feito < meta){ badgeClasse='alerta'; badgeTxt='atrasando'; }
+
+    return `<div class="cliente-row" onclick="abrirDetalheCliente(${c.id})">
+      <div class="row-between">
+        <div>
+          <div class="nome">${escapeHtml(c.nome)}</div>
+          <div class="meta">${escapeHtml(c.empresa||'')} ${c.nivel?'· '+escapeHtml(c.nivel):''} · ${c.status}</div>
+        </div>
+        <span class="badge ${badgeClasse}">${badgeTxt}</span>
+      </div>
+      <div class="stats">
+        <span>Etapa: <b>${escapeHtml(etapaAtual ? etapaAtual.nome : '—')}</b></span>
+        <span>Semana: <b>${feito}/${meta}</b> posts</span>
+        <span>Pendências: <b>${pendAbertas}</b></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModal(titulo, bodyHtml){
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  document.getElementById('modal-bg').style.display = 'flex';
+}
+document.getElementById('modal-fechar').addEventListener('click', fecharModal);
+document.getElementById('modal-bg').addEventListener('click', (e) => { if(e.target.id==='modal-bg') fecharModal(); });
+function fecharModal(){ document.getElementById('modal-bg').style.display = 'none'; }
+
+function abrirFormNovoCliente(){
+  abrirModal('Novo cliente', `
+    <form id="form-novo-cliente">
+      <div class="grid2">
+        <div class="campo"><label>Nome</label><input id="nc-nome" required></div>
+        <div class="campo"><label>Empresa</label><input id="nc-empresa"></div>
+        <div class="campo"><label>Nível / plano</label><input id="nc-nivel"></div>
+        <div class="campo"><label>E-mail (referência)</label><input type="email" id="nc-email"></div>
+        <div class="campo"><label>Data de início</label><input type="date" id="nc-data-inicio" value="${isoHoje()}"></div>
+        <div class="campo"><label>Meta de posts / semana</label><input type="number" id="nc-meta" value="4" min="1" max="7"></div>
+      </div>
+      <p class="desc" style="margin-top:14px">O login do cliente é criado à parte (Supabase → Authentication) e depois vinculado aqui. Cadastre primeiro, o acesso vem em seguida.</p>
+      <button type="submit" class="btn-primary" style="margin-top:6px">Cadastrar</button>
+    </form>
+  `);
+  document.getElementById('form-novo-cliente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      nome: document.getElementById('nc-nome').value.trim(),
+      empresa: document.getElementById('nc-empresa').value.trim() || null,
+      nivel: document.getElementById('nc-nivel').value.trim() || null,
+      email: document.getElementById('nc-email').value.trim() || null,
+      data_inicio: document.getElementById('nc-data-inicio').value || null,
+      meta_semanal: parseInt(document.getElementById('nc-meta').value) || 4,
+      status: 'ativo'
+    };
+    const { error } = await sb.from('cli_clientes').insert(payload);
+    if(error){ alert('Erro: '+error.message); return; }
+    fecharModal();
+    carregarListaClientes();
+  });
+}
+
+async function abrirDetalheCliente(clienteId){
+  const { data: cliente } = await sb.from('cli_clientes').select('*').eq('id', clienteId).single();
+  const { data: progresso } = await sb.from('cli_progresso').select('*').eq('cliente_id', clienteId);
+  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
+  const { data: posts } = await sb.from('cli_posts').select('*').eq('cliente_id', clienteId).eq('semana_ref', seg).order('data');
+  const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('cliente_id', clienteId).eq('status','pendente').order('pedido_em');
+
+  const concluidas = new Set((progresso||[]).filter(p=>p.concluida_em).map(p=>p.etapa_id));
+
+  const etapasHtml = ETAPAS.map(et => {
+    const done = concluidas.has(et.id);
+    return `<div class="item-lista">
+      <div class="txt">${escapeHtml(et.nome)}${done ? '<small>concluída</small>' : ''}</div>
+      ${done ? '<span class="badge ok">✓</span>' : `<button class="btn-ghost btn-sm" onclick="marcarEtapaConcluida(${clienteId}, ${et.id})">Marcar concluída</button>`}
+    </div>`;
+  }).join('');
+
+  const postsHtml = (posts||[]).length
+    ? posts.map(p => `<div class="item-lista"><div class="txt">${fmtData(p.data)} ${p.link?'· <a href="'+escapeHtml(p.link)+'" target="_blank">ver</a>':''}</div></div>`).join('')
+    : '<div class="vazio">Nenhum post essa semana.</div>';
+
+  const pendHtml = (pendencias||[]).length
+    ? pendencias.map(p => `<div class="item-lista">
+        <div class="txt">${escapeHtml(p.item)}<small>pedido em ${new Date(p.pedido_em).toLocaleDateString('pt-BR')}</small></div>
+        <button class="btn-ghost btn-sm" onclick="marcarEnviado(${p.id}, ${clienteId}, true)">Marcar recebido</button>
+      </div>`).join('')
+    : '<div class="vazio">Nenhuma pendência aberta.</div>';
+
+  abrirModal(cliente.nome, `
+    <div class="card" style="margin-bottom:16px">
+      <h2>Dados</h2>
+      <form id="form-editar-cliente">
+        <div class="grid2">
+          <div class="campo"><label>Nome</label><input id="ec-nome" value="${escapeHtml(cliente.nome)}" required></div>
+          <div class="campo"><label>Empresa</label><input id="ec-empresa" value="${escapeHtml(cliente.empresa||'')}"></div>
+          <div class="campo"><label>Nível / plano</label><input id="ec-nivel" value="${escapeHtml(cliente.nivel||'')}"></div>
+          <div class="campo"><label>Status</label>
+            <select id="ec-status">
+              <option value="ativo" ${cliente.status==='ativo'?'selected':''}>Ativo</option>
+              <option value="pausado" ${cliente.status==='pausado'?'selected':''}>Pausado</option>
+              <option value="encerrado" ${cliente.status==='encerrado'?'selected':''}>Encerrado</option>
+            </select>
+          </div>
+          <div class="campo"><label>Meta de posts / semana</label><input type="number" id="ec-meta" value="${cliente.meta_semanal||4}" min="1" max="7"></div>
+        </div>
+        <button type="submit" class="btn-primary btn-sm" style="margin-top:10px">Salvar</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Etapas do onboarding</h2>
+      ${etapasHtml}
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Posts dessa semana</h2>
+      ${postsHtml}
+    </div>
+
+    <div class="card">
+      <h2>Pendências de material</h2>
+      ${pendHtml}
+      <form class="form-inline" id="form-nova-pendencia">
+        <input id="np-item" placeholder="Ex: print do SSI atualizado" required>
+        <button type="submit" class="btn-primary btn-sm">Adicionar pendência</button>
+      </form>
+    </div>
+  `);
+
+  document.getElementById('form-editar-cliente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      nome: document.getElementById('ec-nome').value.trim(),
+      empresa: document.getElementById('ec-empresa').value.trim() || null,
+      nivel: document.getElementById('ec-nivel').value.trim() || null,
+      status: document.getElementById('ec-status').value,
+      meta_semanal: parseInt(document.getElementById('ec-meta').value) || 4
+    };
+    const { error } = await sb.from('cli_clientes').update(payload).eq('id', clienteId);
+    if(error){ alert('Erro: '+error.message); return; }
+    fecharModal();
+    carregarListaClientes();
+  });
+
+  document.getElementById('form-nova-pendencia').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const item = document.getElementById('np-item').value.trim();
+    const { error } = await sb.from('cli_materiais_pendentes').insert({ cliente_id: clienteId, item });
+    if(error){ alert('Erro: '+error.message); return; }
+    abrirDetalheCliente(clienteId);
+  });
+}
+
+async function marcarEtapaConcluida(clienteId, etapaId){
+  const { error } = await sb.from('cli_progresso').upsert({
+    cliente_id: clienteId, etapa_id: etapaId, concluida_em: new Date().toISOString()
+  }, { onConflict: 'cliente_id,etapa_id' });
+  if(error){ alert('Erro: '+error.message); return; }
+  abrirDetalheCliente(clienteId);
+  carregarListaClientes();
+}
+
+boot();
+</script>
+</body>
+</html>
