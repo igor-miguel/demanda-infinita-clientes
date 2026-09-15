@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demanda Infinita · Clientes</title>
+<title>Demanda Infinita · Mentorados</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -25,6 +25,7 @@
   .btn-primary:hover{background:var(--green-light);}
   .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line);}
   .btn-ghost:hover{background:var(--card);}
+  .btn-ghost.ativo{background:var(--green);color:#fff;border-color:var(--green);}
   .btn-sm{padding:6px 12px;font-size:.82rem;}
   input,select{font-family:'Inter',sans-serif;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:.92rem;width:100%;}
   input:focus,select:focus{outline:2px solid var(--green-light);outline-offset:1px;}
@@ -78,16 +79,39 @@
   .item-lista .txt small{display:block;color:var(--gray);font-size:.76rem;margin-top:2px;}
   .vazio{color:var(--gray);font-size:.85rem;padding:14px 0;text-align:center;}
 
-  .form-inline{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .form-inline{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;}
   .form-inline input{flex:1;min-width:140px;}
 
   /* ---- admin lista de clientes ---- */
+  .nav-admin{display:flex;gap:8px;margin-bottom:22px;}
   .cliente-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
   .cliente-row:hover{border-color:var(--green-light);}
   .cliente-row .nome{font-weight:700;font-size:.98rem;}
   .cliente-row .meta{color:var(--gray);font-size:.8rem;margin-top:2px;}
   .cliente-row .stats{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;font-size:.8rem;}
   .cliente-row .stats b{font-weight:700;}
+
+  /* ---- calendário ---- */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .calendario-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-dow{text-align:center;font-size:.7rem;color:var(--gray);font-weight:700;padding-bottom:2px;}
+  .cal-dia{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.8rem;cursor:pointer;border:2px solid transparent;background:var(--card);color:var(--text);}
+  .cal-dia.vazio-cel{visibility:hidden;cursor:default;}
+  .cal-dia.completo{background:#E4F5EB;color:var(--green);}
+  .cal-dia.parcial{background:#FBF0DC;color:var(--amber);}
+  .cal-dia.hoje{border-color:var(--green);font-weight:800;}
+  .legenda-cal{display:flex;gap:14px;margin-top:10px;font-size:.76rem;color:var(--gray);flex-wrap:wrap;}
+  .legenda-cal .ponto{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:middle;}
+
+  /* ---- drive ---- */
+  .drive-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .drive-tab{padding:6px 14px;border-radius:20px;font-size:.82rem;font-weight:600;cursor:pointer;background:var(--card);color:var(--gray);}
+  .drive-tab.ativo{background:var(--green);color:#fff;}
+
+  /* ---- dashboard ---- */
+  .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px;}
+  .dash-grid .card{margin-bottom:0;text-align:center;}
+  .dash-num{font-size:1.9rem;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;}
 
   /* ---- modal ---- */
   .modal-bg{display:none;position:fixed;inset:0;background:rgba(17,17,17,.45);z-index:20;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
@@ -110,7 +134,7 @@
 <div id="tela-login" style="display:none">
   <div class="login-box">
     <div class="kicker">Método Demanda Infinita®</div>
-    <h1>Painel de Clientes</h1>
+    <h1>Painel de Mentorados</h1>
     <p class="sub">Entre com o e-mail e senha que você recebeu.</p>
     <form id="form-login">
       <div class="campo">
@@ -129,7 +153,7 @@
 
 <div id="app">
   <header class="topbar">
-    <div class="brand">Demanda <span>Infinita</span> · Clientes</div>
+    <div class="brand">Demanda <span>Infinita</span> · Mentorados</div>
     <div class="userbox">
       <span id="user-nome"></span>
       <button class="btn-ghost btn-sm" id="btn-logout">Sair</button>
@@ -142,7 +166,7 @@
 <div class="modal-bg" id="modal-bg">
   <div class="modal">
     <div class="modal-head">
-      <h2 id="modal-titulo">Cliente</h2>
+      <h2 id="modal-titulo">Mentorado</h2>
       <button class="fechar" id="modal-fechar">&times;</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
@@ -153,9 +177,15 @@
 const SUPABASE_URL = 'https://okolawlvmfyxzvnnpvtv.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_IsQdhzWIou3tBX9qxak1VQ_m-wEHCFZ';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DRIVE_BUCKET = 'cli-drive';
+const DRIVE_CATEGORIAS = [ {id:'posts', nome:'Posts'}, {id:'materiais', nome:'Materiais'}, {id:'outros', nome:'Outros'} ];
 
 let PERFIL = null;   // { id, cliente_id, role, nome }
 let ETAPAS = [];     // lista fixa, ordenada
+let ADMIN_ABA = 'lista';
+let CAL_ESTADO = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
+let DRIVE_ABA_CLIENTE = 'posts';
+let DRIVE_ABA_ADMIN = 'posts';
 
 function segundaFeira(d){
   const dt = new Date(d);
@@ -170,7 +200,8 @@ function fmtData(iso){
   const [y,m,d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
-function isoHoje(){ return new Date().toISOString().slice(0,10); }
+function isoData(d){ return d.toISOString().slice(0,10); }
+function isoHoje(){ return isoData(new Date()); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // ---------- boot ----------
@@ -232,28 +263,272 @@ async function carregarPerfilEIniciar(){
   }
 }
 
+// ================= HELPERS DE ATIVIDADE / CALENDÁRIO =================
+function statusAtividade(atividade, cliente){
+  if(!atividade) return 'vazio';
+  const okCon = (atividade.conexoes||0) >= (cliente.meta_conexoes||5);
+  const okPost = !!atividade.post_feito;
+  const okCom = (atividade.comentarios||0) >= (cliente.meta_comentarios_min||5);
+  if(okCon && okPost && okCom) return 'completo';
+  if((atividade.conexoes||0)>0 || atividade.post_feito || (atividade.comentarios||0)>0) return 'parcial';
+  return 'vazio';
+}
+
+async function carregarAtividadesMes(clienteId, ano, mes){
+  const inicio = isoData(new Date(ano, mes, 1));
+  const fim = isoData(new Date(ano, mes+1, 0));
+  const { data } = await sb.from('cli_atividades_diarias').select('*').eq('cliente_id', clienteId).gte('data', inicio).lte('data', fim);
+  const mapa = {};
+  (data||[]).forEach(a => { mapa[a.data] = a; });
+  return mapa;
+}
+
+async function salvarAtividade(clienteId, data, valores){
+  const { error } = await sb.from('cli_atividades_diarias').upsert({
+    cliente_id: clienteId, data,
+    conexoes: valores.conexoes, post_feito: valores.post_feito,
+    post_link: valores.post_link || null, comentarios: valores.comentarios,
+    atualizado_em: new Date().toISOString()
+  }, { onConflict: 'cliente_id,data' });
+  return error;
+}
+
+function gerarDiasMes(ano, mes){
+  const primeiro = new Date(ano, mes, 1);
+  const ultimoDia = new Date(ano, mes+1, 0).getDate();
+  const offset = (primeiro.getDay() + 6) % 7; // 0 = segunda
+  const dias = [];
+  for(let i=0;i<offset;i++) dias.push(null);
+  for(let d=1; d<=ultimoDia; d++) dias.push(new Date(ano, mes, d));
+  return dias;
+}
+
+function renderCalendarioHtml(ano, mes, cliente, mapaAtividades){
+  const dias = gerarDiasMes(ano, mes);
+  const hojeIso = isoHoje();
+  const DOW = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  const cabecalho = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const celulas = dias.map(d => {
+    if(!d) return `<div class="cal-dia vazio-cel"></div>`;
+    const iso = isoData(d);
+    const st = statusAtividade(mapaAtividades[iso], cliente);
+    const classes = ['cal-dia', st];
+    if(iso === hojeIso) classes.push('hoje');
+    return `<div class="${classes.join(' ')}" data-dia="${iso}" onclick="window.__calClick && window.__calClick('${iso}')">${d.getDate()}</div>`;
+  }).join('');
+  const nomeMes = new Date(ano, mes, 1).toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+  return `
+    <div class="cal-nav">
+      <button type="button" class="btn-ghost btn-sm" onclick="window.__calNav && window.__calNav(-1)">‹</button>
+      <strong style="text-transform:capitalize">${nomeMes}</strong>
+      <button type="button" class="btn-ghost btn-sm" onclick="window.__calNav && window.__calNav(1)">›</button>
+    </div>
+    <div class="calendario-grid">${cabecalho}${celulas}</div>
+    <div class="legenda-cal">
+      <span><span class="ponto" style="background:#E4F5EB;border:1px solid var(--green-light)"></span>completo</span>
+      <span><span class="ponto" style="background:#FBF0DC;border:1px solid var(--amber)"></span>parcial</span>
+      <span><span class="ponto" style="background:var(--card)"></span>vazio</span>
+    </div>
+    <div id="dia-edit-slot"></div>
+  `;
+}
+
+function formCamposAtividade(prefixo, atividade){
+  const a = atividade || { conexoes:0, post_feito:false, post_link:'', comentarios:0 };
+  return `
+    <div class="grid2">
+      <div class="campo"><label id="${prefixo}-lbl-con">Conexões</label><input type="number" id="${prefixo}-conexoes" min="0" value="${a.conexoes||0}"></div>
+      <div class="campo"><label id="${prefixo}-lbl-com">Comentários</label><input type="number" id="${prefixo}-comentarios" min="0" value="${a.comentarios||0}"></div>
+    </div>
+    <div class="campo" style="margin-top:10px">
+      <label><input type="checkbox" id="${prefixo}-post" ${a.post_feito?'checked':''} style="width:auto;margin-right:6px;vertical-align:middle">Post feito</label>
+    </div>
+    <div class="campo" style="margin-top:8px">
+      <label>Link do post</label>
+      <input type="url" id="${prefixo}-link" value="${escapeHtml(a.post_link||'')}" placeholder="https://linkedin.com/...">
+    </div>
+  `;
+}
+
+function lerCamposAtividade(prefixo){
+  return {
+    conexoes: parseInt(document.getElementById(`${prefixo}-conexoes`).value) || 0,
+    post_feito: document.getElementById(`${prefixo}-post`).checked,
+    post_link: document.getElementById(`${prefixo}-link`).value.trim(),
+    comentarios: parseInt(document.getElementById(`${prefixo}-comentarios`).value) || 0,
+  };
+}
+
+async function montarCalendario(clienteId, cliente, isAdmin){
+  const slotId = isAdmin ? 'cal-slot-admin' : 'cal-slot';
+  const mapa = await carregarAtividadesMes(clienteId, CAL_ESTADO.ano, CAL_ESTADO.mes);
+  document.getElementById(slotId).innerHTML = renderCalendarioHtml(CAL_ESTADO.ano, CAL_ESTADO.mes, cliente, mapa);
+
+  window.__calNav = async (delta) => {
+    let m = CAL_ESTADO.mes + delta, a = CAL_ESTADO.ano;
+    if(m<0){ m=11; a--; } if(m>11){ m=0; a++; }
+    CAL_ESTADO = { ano:a, mes:m };
+    await montarCalendario(clienteId, cliente, isAdmin);
+  };
+
+  window.__calClick = (iso) => {
+    const atividade = mapa[iso];
+    const html = `
+      <div class="card" style="margin-top:12px;background:var(--bg)">
+        <h2 style="font-size:.92rem">Checklist de ${fmtData(iso)}</h2>
+        ${formCamposAtividade('dia', atividade)}
+        <button type="button" class="btn-primary btn-sm" style="margin-top:10px" onclick="window.__salvarDia && window.__salvarDia()">Salvar</button>
+      </div>
+    `;
+    if(isAdmin){
+      document.getElementById('dia-edit-slot').innerHTML = html;
+      document.getElementById('dia-lbl-con').textContent = `Conexões (meta: ${cliente.meta_conexoes||5})`;
+      document.getElementById('dia-lbl-com').textContent = `Comentários (meta: ${cliente.meta_comentarios_min||5}–${cliente.meta_comentarios_max||10})`;
+    } else {
+      abrirModal('Checklist de ' + fmtData(iso), html);
+      document.getElementById('dia-lbl-con').textContent = `Conexões (meta: ${cliente.meta_conexoes||5})`;
+      document.getElementById('dia-lbl-com').textContent = `Comentários (meta: ${cliente.meta_comentarios_min||5}–${cliente.meta_comentarios_max||10})`;
+    }
+    window.__salvarDia = async () => {
+      const valores = lerCamposAtividade('dia');
+      const error = await salvarAtividade(clienteId, iso, valores);
+      if(error){ alert('Erro: '+error.message); return; }
+      if(!isAdmin) fecharModal();
+      await montarCalendario(clienteId, cliente, isAdmin);
+      if(!isAdmin) await montarHoje(clienteId, cliente);
+    };
+  };
+}
+
+// ================= DRIVE =================
+function montarDrive(clienteId, isAdmin){
+  const slotId = isAdmin ? 'drive-slot-admin' : 'drive-slot';
+  if(isAdmin) DRIVE_ABA_ADMIN = 'posts'; else DRIVE_ABA_CLIENTE = 'posts';
+  const abaAtual = () => isAdmin ? DRIVE_ABA_ADMIN : DRIVE_ABA_CLIENTE;
+
+  const tabs = DRIVE_CATEGORIAS.map(c => `<div class="drive-tab ${c.id===abaAtual()?'ativo':''}" data-cat="${c.id}" onclick="window.__driveTab_${isAdmin?'admin':'cli'}('${c.id}')">${c.nome}</div>`).join('');
+  document.getElementById(slotId).innerHTML = `
+    <div class="drive-tabs">${tabs}</div>
+    <div id="${slotId}-lista"><p class="vazio">carregando…</p></div>
+    <form class="form-inline" id="${slotId}-upload">
+      <input type="file" id="${slotId}-arquivo" required>
+      <button type="submit" class="btn-primary btn-sm">Enviar</button>
+    </form>
+  `;
+
+  const trocarAba = async (cat) => {
+    if(isAdmin) DRIVE_ABA_ADMIN = cat; else DRIVE_ABA_CLIENTE = cat;
+    document.querySelectorAll(`#${slotId} .drive-tab`).forEach(el => el.classList.toggle('ativo', el.dataset.cat===cat));
+    await carregarArquivos(clienteId, slotId, cat);
+  };
+  window[`__driveTab_${isAdmin?'admin':'cli'}`] = trocarAba;
+
+  document.getElementById(`${slotId}-upload`).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById(`${slotId}-arquivo`);
+    const file = input.files[0];
+    if(!file) return;
+    const nomeSeguro = file.name.replace(/[^\w.\-]+/g, '_');
+    const cat = abaAtual();
+    const path = `${clienteId}/${cat}/${Date.now()}_${nomeSeguro}`;
+    const { error } = await sb.storage.from(DRIVE_BUCKET).upload(path, file);
+    if(error){ alert('Erro ao enviar: '+error.message); return; }
+    input.value = '';
+    await carregarArquivos(clienteId, slotId, cat);
+  });
+
+  carregarArquivos(clienteId, slotId, abaAtual());
+}
+
+async function carregarArquivos(clienteId, slotId, categoria){
+  const { data, error } = await sb.storage.from(DRIVE_BUCKET).list(`${clienteId}/${categoria}`, { limit:100, sortBy:{ column:'created_at', order:'desc' } });
+  const wrap = document.getElementById(`${slotId}-lista`);
+  if(!wrap) return;
+  if(error){ wrap.innerHTML = `<p class="vazio">Erro ao carregar: ${escapeHtml(error.message)}</p>`; return; }
+  const arquivos = (data||[]).filter(f => f.name && f.name !== '.emptyFolderPlaceholder');
+  if(!arquivos.length){ wrap.innerHTML = '<p class="vazio">Nenhum arquivo nessa categoria ainda.</p>'; return; }
+  wrap.innerHTML = arquivos.map(f => {
+    const tamanho = f.metadata && f.metadata.size ? Math.round(f.metadata.size/1024)+' KB' : '';
+    const nomeExibicao = f.name.replace(/^\d+_/, '');
+    return `<div class="item-lista">
+      <div class="txt">${escapeHtml(nomeExibicao)}<small>${tamanho}</small></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-ghost btn-sm" onclick="window.__baixarArquivo('${clienteId}','${categoria}','${f.name}')">Baixar</button>
+        <button class="btn-ghost btn-sm" onclick="window.__excluirArquivo('${clienteId}','${categoria}','${f.name}','${slotId}')">Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.__baixarArquivo = async (clienteId, categoria, nome) => {
+  const { data, error } = await sb.storage.from(DRIVE_BUCKET).createSignedUrl(`${clienteId}/${categoria}/${nome}`, 120);
+  if(error){ alert('Erro: '+error.message); return; }
+  window.open(data.signedUrl, '_blank');
+};
+window.__excluirArquivo = async (clienteId, categoria, nome, slotId) => {
+  if(!confirm('Excluir esse arquivo?')) return;
+  const { error } = await sb.storage.from(DRIVE_BUCKET).remove([`${clienteId}/${categoria}/${nome}`]);
+  if(error){ alert('Erro: '+error.message); return; }
+  await carregarArquivos(clienteId, slotId, categoria);
+};
+
 // ================= VISÃO CLIENTE =================
 async function renderCliente(clienteId){
   const el = document.getElementById('main-cliente');
   if(!clienteId){
-    el.innerHTML = '<div class="card"><p class="vazio">Seu perfil ainda não está vinculado a um cliente. Fale com o Igor.</p></div>';
+    el.innerHTML = '<div class="card"><p class="vazio">Seu perfil ainda não está vinculado a um mentorado. Fale com o Igor.</p></div>';
     return;
   }
   const { data: cliente } = await sb.from('cli_clientes').select('*').eq('id', clienteId).single();
   const { data: progresso } = await sb.from('cli_progresso').select('*').eq('cliente_id', clienteId);
-  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
-  const { data: posts } = await sb.from('cli_posts').select('*').eq('cliente_id', clienteId).eq('semana_ref', seg).order('data');
   const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('cliente_id', clienteId).eq('status','pendente').order('pedido_em');
+
+  CAL_ESTADO = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 
   el.innerHTML = `
     <h1>Olá, ${escapeHtml(cliente.nome)}</h1>
     <p style="color:var(--gray);margin-top:-8px">${escapeHtml(cliente.empresa||'')} ${cliente.nivel ? '· '+escapeHtml(cliente.nivel) : ''}</p>
     ${renderStepper(progresso)}
-    <div class="card" id="card-semana"></div>
+    <div class="card">
+      <h2>Checklist de hoje</h2>
+      <p class="desc">Três coisas por dia: conectar, postar, comentar.</p>
+      <div id="hoje-slot"></div>
+    </div>
+    <div class="card">
+      <h2>Calendário</h2>
+      <p class="desc">Clique num dia pra ver ou editar o checklist dele.</p>
+      <div id="cal-slot"></div>
+    </div>
+    <div class="card">
+      <h2>Drive</h2>
+      <p class="desc">Seus arquivos, organizados por categoria.</p>
+      <div id="drive-slot"></div>
+    </div>
     <div class="card" id="card-pendencias"></div>
   `;
-  renderCardSemana(clienteId, cliente, posts||[]);
+
+  await montarHoje(clienteId, cliente);
+  await montarCalendario(clienteId, cliente, false);
+  montarDrive(clienteId, false);
   renderCardPendencias(clienteId, pendencias||[], false);
+}
+
+async function montarHoje(clienteId, cliente){
+  const hoje = isoHoje();
+  const { data: atividade } = await sb.from('cli_atividades_diarias').select('*').eq('cliente_id', clienteId).eq('data', hoje).maybeSingle();
+  document.getElementById('hoje-slot').innerHTML = `
+    ${formCamposAtividade('hoje', atividade)}
+    <button type="button" class="btn-primary btn-sm" style="margin-top:10px" onclick="window.__salvarHoje()">Salvar checklist de hoje</button>
+  `;
+  document.getElementById('hoje-lbl-con').textContent = `Conexões feitas (meta: ${cliente.meta_conexoes||5})`;
+  document.getElementById('hoje-lbl-com').textContent = `Comentários feitos (meta: ${cliente.meta_comentarios_min||5}–${cliente.meta_comentarios_max||10})`;
+  window.__salvarHoje = async () => {
+    const valores = lerCamposAtividade('hoje');
+    const error = await salvarAtividade(clienteId, hoje, valores);
+    if(error){ alert('Não deu pra salvar: '+error.message); return; }
+    await montarHoje(clienteId, cliente);
+    await montarCalendario(clienteId, cliente, false);
+  };
 }
 
 function renderStepper(progresso){
@@ -270,40 +545,6 @@ function renderStepper(progresso){
     </div>`;
   }).join('');
   return `<div class="stepper">${steps}</div>`;
-}
-
-function renderCardSemana(clienteId, cliente, posts){
-  const meta = cliente.meta_semanal || 4;
-  const feito = posts.length;
-  const pct = Math.min(100, Math.round((feito/meta)*100));
-  const lista = posts.length
-    ? posts.map(p => `<div class="item-lista"><div class="txt">${fmtData(p.data)} ${p.link ? '· <a href="'+escapeHtml(p.link)+'" target="_blank">ver post</a>' : ''}</div></div>`).join('')
-    : '<div class="vazio">Nenhum post registrado nesta semana ainda.</div>';
-
-  document.getElementById('card-semana').innerHTML = `
-    <div class="row-between">
-      <div>
-        <h2>Checklist da semana</h2>
-        <p class="desc">Meta: ${meta}x por semana — ${feito} de ${meta} feitos</p>
-      </div>
-    </div>
-    <div class="barra"><div style="width:${pct}%"></div></div>
-    ${lista}
-    <form class="form-inline" id="form-post">
-      <input type="date" id="post-data" value="${isoHoje()}" required>
-      <input type="url" id="post-link" placeholder="Link do post no LinkedIn" required>
-      <button type="submit" class="btn-primary btn-sm">Registrar post</button>
-    </form>
-  `;
-  document.getElementById('form-post').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = document.getElementById('post-data').value;
-    const link = document.getElementById('post-link').value.trim();
-    const semana_ref = segundaFeira(new Date(data+'T00:00:00')).toISOString().slice(0,10);
-    const { error } = await sb.from('cli_posts').insert({ cliente_id: clienteId, data, link, semana_ref });
-    if(error){ alert('Não deu pra salvar: '+error.message); return; }
-    renderCliente(clienteId);
-  });
 }
 
 function renderCardPendencias(clienteId, pendencias, isAdmin){
@@ -331,9 +572,22 @@ async function marcarEnviado(id, clienteId, isAdmin){
 async function renderAdmin(){
   const el = document.getElementById('main-admin');
   el.innerHTML = `
+    <div class="nav-admin">
+      <button class="btn-ghost btn-sm ${ADMIN_ABA==='lista'?'ativo':''}" onclick="window.__adminAba('lista')">Mentorados</button>
+      <button class="btn-ghost btn-sm ${ADMIN_ABA==='dashboard'?'ativo':''}" onclick="window.__adminAba('dashboard')">Dashboard</button>
+    </div>
+    <div id="admin-conteudo"></div>
+  `;
+  window.__adminAba = async (aba) => { ADMIN_ABA = aba; await renderAdmin(); };
+  if(ADMIN_ABA === 'dashboard') await renderDashboard();
+  else await renderListaClientesTela();
+}
+
+async function renderListaClientesTela(){
+  document.getElementById('admin-conteudo').innerHTML = `
     <div class="row-between">
-      <h1>Clientes</h1>
-      <button class="btn-primary" id="btn-novo-cliente">+ Novo cliente</button>
+      <h1>Mentorados</h1>
+      <button class="btn-primary" id="btn-novo-cliente">+ Novo mentorado</button>
     </div>
     <div id="lista-clientes"><p class="vazio">carregando…</p></div>
   `;
@@ -344,26 +598,26 @@ async function renderAdmin(){
 async function carregarListaClientes(){
   const { data: clientes } = await sb.from('cli_clientes').select('*').order('nome');
   const { data: progresso } = await sb.from('cli_progresso').select('*');
-  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
-  const { data: posts } = await sb.from('cli_posts').select('*').eq('semana_ref', seg);
+  const hoje = isoHoje();
+  const { data: atividadesHoje } = await sb.from('cli_atividades_diarias').select('*').eq('data', hoje);
   const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('status','pendente');
 
   const wrap = document.getElementById('lista-clientes');
   if(!clientes || !clientes.length){
-    wrap.innerHTML = '<p class="vazio">Nenhum cliente cadastrado ainda.</p>';
+    wrap.innerHTML = '<p class="vazio">Nenhum mentorado cadastrado ainda.</p>';
     return;
   }
 
   wrap.innerHTML = clientes.map(c => {
-    const meta = c.meta_semanal || 4;
-    const feito = (posts||[]).filter(p=>p.cliente_id===c.id).length;
     const pendAbertas = (pendencias||[]).filter(p=>p.cliente_id===c.id).length;
     const concluidas = new Set((progresso||[]).filter(p=>p.concluida_em && p.cliente_id===c.id).map(p=>p.etapa_id));
     const etapaAtual = ETAPAS.find(e => !concluidas.has(e.id)) || ETAPAS[ETAPAS.length-1];
+    const ativHoje = (atividadesHoje||[]).find(a=>a.cliente_id===c.id);
+    const status = statusAtividade(ativHoje, c);
 
-    let badgeClasse = 'ok', badgeTxt = 'em dia';
-    if(feito === 0){ badgeClasse='critico'; badgeTxt='parado essa semana'; }
-    else if(feito < meta){ badgeClasse='alerta'; badgeTxt='atrasando'; }
+    let badgeClasse = 'critico', badgeTxt = 'parado hoje';
+    if(status === 'completo'){ badgeClasse='ok'; badgeTxt='em dia'; }
+    else if(status === 'parcial'){ badgeClasse='alerta'; badgeTxt='parcial hoje'; }
 
     return `<div class="cliente-row" onclick="abrirDetalheCliente(${c.id})">
       <div class="row-between">
@@ -375,11 +629,83 @@ async function carregarListaClientes(){
       </div>
       <div class="stats">
         <span>Etapa: <b>${escapeHtml(etapaAtual ? etapaAtual.nome : '—')}</b></span>
-        <span>Semana: <b>${feito}/${meta}</b> posts</span>
+        <span>Conexões hoje: <b>${ativHoje ? ativHoje.conexoes : 0}/${c.meta_conexoes||5}</b></span>
+        <span>Comentários hoje: <b>${ativHoje ? ativHoje.comentarios : 0}/${c.meta_comentarios_min||5}</b></span>
         <span>Pendências: <b>${pendAbertas}</b></span>
       </div>
     </div>`;
   }).join('');
+}
+
+async function renderDashboard(){
+  document.getElementById('admin-conteudo').innerHTML = `<h1>Dashboard</h1><div id="dash-conteudo"><p class="vazio">carregando…</p></div>`;
+
+  const { data: clientes } = await sb.from('cli_clientes').select('*');
+  const todos = clientes || [];
+  const ativos = todos.filter(c=>c.status==='ativo');
+  const { data: progresso } = await sb.from('cli_progresso').select('*');
+  const hoje = isoHoje();
+  const { data: atividadesHoje } = await sb.from('cli_atividades_diarias').select('*').eq('data', hoje);
+
+  const seteDiasAtras = new Date(); seteDiasAtras.setDate(seteDiasAtras.getDate()-6);
+  const inicioIso = isoData(seteDiasAtras);
+  const { data: atividades7d } = await sb.from('cli_atividades_diarias').select('*').gte('data', inicioIso).lte('data', hoje);
+
+  let completos=0, parciais=0, parados=0;
+  ativos.forEach(c => {
+    const a = (atividadesHoje||[]).find(x=>x.cliente_id===c.id);
+    const st = statusAtividade(a, c);
+    if(st==='completo') completos++; else if(st==='parcial') parciais++; else parados++;
+  });
+
+  const concluidasPorCliente = {};
+  (progresso||[]).forEach(p => {
+    if(!p.concluida_em) return;
+    concluidasPorCliente[p.cliente_id] = concluidasPorCliente[p.cliente_id] || new Set();
+    concluidasPorCliente[p.cliente_id].add(p.etapa_id);
+  });
+  const distEtapas = ETAPAS.map(et => ({ etapa: et, count: 0 }));
+  ativos.forEach(c => {
+    const concl = concluidasPorCliente[c.id] || new Set();
+    const atual = ETAPAS.find(e => !concl.has(e.id)) || ETAPAS[ETAPAS.length-1];
+    const item = distEtapas.find(d => d.etapa.id === atual.id);
+    if(item) item.count++;
+  });
+  const maxDist = Math.max(1, ...distEtapas.map(d=>d.count));
+
+  const ranking = ativos.map(c => {
+    const dias = (atividades7d||[]).filter(a=>a.cliente_id===c.id);
+    const completosCliente = dias.filter(a => statusAtividade(a,c)==='completo').length;
+    return { nome: c.nome, completos: completosCliente };
+  }).sort((a,b) => b.completos - a.completos);
+
+  document.getElementById('dash-conteudo').innerHTML = `
+    <div class="dash-grid">
+      <div class="card"><div class="dash-num">${ativos.length}</div><div class="desc">mentorados ativos</div></div>
+      <div class="card"><div class="dash-num" style="color:var(--green)">${completos}</div><div class="desc">em dia hoje</div></div>
+      <div class="card"><div class="dash-num" style="color:var(--amber)">${parciais}</div><div class="desc">parcial hoje</div></div>
+      <div class="card"><div class="dash-num" style="color:var(--red)">${parados}</div><div class="desc">parados hoje</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Onde cada mentorado está no funil</h2>
+      <p class="desc">Quantos mentorados ativos em cada etapa do onboarding</p>
+      ${distEtapas.map(d => `
+        <div style="margin-bottom:10px">
+          <div class="row-between"><span style="font-size:.85rem">${escapeHtml(d.etapa.nome)}</span><b>${d.count}</b></div>
+          <div class="barra"><div style="width:${(d.count/maxDist)*100}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card">
+      <h2>Consistência (últimos 7 dias)</h2>
+      <p class="desc">Quantos dias completos (conexões + post + comentários) cada mentorado teve</p>
+      ${ranking.length ? ranking.map(r => `
+        <div class="item-lista"><div class="txt">${escapeHtml(r.nome)}</div><b>${r.completos}/7</b></div>
+      `).join('') : '<div class="vazio">Sem mentorados ativos ainda.</div>'}
+    </div>
+  `;
 }
 
 function abrirModal(titulo, bodyHtml){
@@ -392,7 +718,7 @@ document.getElementById('modal-bg').addEventListener('click', (e) => { if(e.targ
 function fecharModal(){ document.getElementById('modal-bg').style.display = 'none'; }
 
 function abrirFormNovoCliente(){
-  abrirModal('Novo cliente', `
+  abrirModal('Novo mentorado', `
     <form id="form-novo-cliente">
       <div class="grid2">
         <div class="campo"><label>Nome</label><input id="nc-nome" required></div>
@@ -401,8 +727,15 @@ function abrirFormNovoCliente(){
         <div class="campo"><label>E-mail (referência)</label><input type="email" id="nc-email"></div>
         <div class="campo"><label>Data de início</label><input type="date" id="nc-data-inicio" value="${isoHoje()}"></div>
         <div class="campo"><label>Meta de posts / semana</label><input type="number" id="nc-meta" value="4" min="1" max="7"></div>
+        <div class="campo"><label>Meta de conexões / dia</label><input type="number" id="nc-conexoes" value="5" min="0"></div>
+        <div class="campo"><label>Comentários / dia (mín–máx)</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="nc-com-min" value="5" min="0">
+            <input type="number" id="nc-com-max" value="10" min="0">
+          </div>
+        </div>
       </div>
-      <p class="desc" style="margin-top:14px">O login do cliente é criado à parte (Supabase → Authentication) e depois vinculado aqui. Cadastre primeiro, o acesso vem em seguida.</p>
+      <p class="desc" style="margin-top:14px">O login do mentorado é criado à parte (Supabase → Authentication) e depois vinculado aqui. Cadastre primeiro, o acesso vem em seguida.</p>
       <button type="submit" class="btn-primary" style="margin-top:6px">Cadastrar</button>
     </form>
   `);
@@ -415,6 +748,9 @@ function abrirFormNovoCliente(){
       email: document.getElementById('nc-email').value.trim() || null,
       data_inicio: document.getElementById('nc-data-inicio').value || null,
       meta_semanal: parseInt(document.getElementById('nc-meta').value) || 4,
+      meta_conexoes: parseInt(document.getElementById('nc-conexoes').value) || 5,
+      meta_comentarios_min: parseInt(document.getElementById('nc-com-min').value) || 5,
+      meta_comentarios_max: parseInt(document.getElementById('nc-com-max').value) || 10,
       status: 'ativo'
     };
     const { error } = await sb.from('cli_clientes').insert(payload);
@@ -427,8 +763,6 @@ function abrirFormNovoCliente(){
 async function abrirDetalheCliente(clienteId){
   const { data: cliente } = await sb.from('cli_clientes').select('*').eq('id', clienteId).single();
   const { data: progresso } = await sb.from('cli_progresso').select('*').eq('cliente_id', clienteId);
-  const seg = segundaFeira(new Date()).toISOString().slice(0,10);
-  const { data: posts } = await sb.from('cli_posts').select('*').eq('cliente_id', clienteId).eq('semana_ref', seg).order('data');
   const { data: pendencias } = await sb.from('cli_materiais_pendentes').select('*').eq('cliente_id', clienteId).eq('status','pendente').order('pedido_em');
 
   const concluidas = new Set((progresso||[]).filter(p=>p.concluida_em).map(p=>p.etapa_id));
@@ -441,16 +775,14 @@ async function abrirDetalheCliente(clienteId){
     </div>`;
   }).join('');
 
-  const postsHtml = (posts||[]).length
-    ? posts.map(p => `<div class="item-lista"><div class="txt">${fmtData(p.data)} ${p.link?'· <a href="'+escapeHtml(p.link)+'" target="_blank">ver</a>':''}</div></div>`).join('')
-    : '<div class="vazio">Nenhum post essa semana.</div>';
-
   const pendHtml = (pendencias||[]).length
     ? pendencias.map(p => `<div class="item-lista">
         <div class="txt">${escapeHtml(p.item)}<small>pedido em ${new Date(p.pedido_em).toLocaleDateString('pt-BR')}</small></div>
         <button class="btn-ghost btn-sm" onclick="marcarEnviado(${p.id}, ${clienteId}, true)">Marcar recebido</button>
       </div>`).join('')
     : '<div class="vazio">Nenhuma pendência aberta.</div>';
+
+  CAL_ESTADO = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 
   abrirModal(cliente.nome, `
     <div class="card" style="margin-bottom:16px">
@@ -468,6 +800,9 @@ async function abrirDetalheCliente(clienteId){
             </select>
           </div>
           <div class="campo"><label>Meta de posts / semana</label><input type="number" id="ec-meta" value="${cliente.meta_semanal||4}" min="1" max="7"></div>
+          <div class="campo"><label>Meta de conexões / dia</label><input type="number" id="ec-conexoes" value="${cliente.meta_conexoes||5}" min="0"></div>
+          <div class="campo"><label>Comentários / dia (mín)</label><input type="number" id="ec-com-min" value="${cliente.meta_comentarios_min||5}" min="0"></div>
+          <div class="campo"><label>Comentários / dia (máx)</label><input type="number" id="ec-com-max" value="${cliente.meta_comentarios_max||10}" min="0"></div>
         </div>
         <button type="submit" class="btn-primary btn-sm" style="margin-top:10px">Salvar</button>
       </form>
@@ -479,8 +814,13 @@ async function abrirDetalheCliente(clienteId){
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <h2>Posts dessa semana</h2>
-      ${postsHtml}
+      <h2>Calendário</h2>
+      <div id="cal-slot-admin"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Drive</h2>
+      <div id="drive-slot-admin"></div>
     </div>
 
     <div class="card">
@@ -493,6 +833,9 @@ async function abrirDetalheCliente(clienteId){
     </div>
   `);
 
+  await montarCalendario(clienteId, cliente, true);
+  montarDrive(clienteId, true);
+
   document.getElementById('form-editar-cliente').addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
@@ -500,7 +843,10 @@ async function abrirDetalheCliente(clienteId){
       empresa: document.getElementById('ec-empresa').value.trim() || null,
       nivel: document.getElementById('ec-nivel').value.trim() || null,
       status: document.getElementById('ec-status').value,
-      meta_semanal: parseInt(document.getElementById('ec-meta').value) || 4
+      meta_semanal: parseInt(document.getElementById('ec-meta').value) || 4,
+      meta_conexoes: parseInt(document.getElementById('ec-conexoes').value) || 5,
+      meta_comentarios_min: parseInt(document.getElementById('ec-com-min').value) || 5,
+      meta_comentarios_max: parseInt(document.getElementById('ec-com-max').value) || 10,
     };
     const { error } = await sb.from('cli_clientes').update(payload).eq('id', clienteId);
     if(error){ alert('Erro: '+error.message); return; }
