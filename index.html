@@ -34,6 +34,7 @@
   /* ---- login ---- */
   #tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-box{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:36px 32px;width:100%;max-width:360px;}
+  .login-box img.logo{width:64px;height:64px;display:block;margin:0 0 16px;}
   .login-box h1{font-size:1.3rem;margin:0 0 4px;}
   .login-box p.sub{color:var(--gray);font-size:.88rem;margin:0 0 24px;}
   .login-box .campo{margin-bottom:14px;}
@@ -44,7 +45,8 @@
   /* ---- shell ---- */
   #app{display:none;min-height:100vh;}
   header.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;}
-  header.topbar .brand{font-size:1.05rem;font-weight:700;}
+  header.topbar .brand{font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:10px;}
+  header.topbar .brand img{height:34px;width:34px;border-radius:50%;}
   header.topbar .brand span{color:var(--green);}
   .userbox{display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--gray);}
   main{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
@@ -133,6 +135,7 @@
 
 <div id="tela-login" style="display:none">
   <div class="login-box">
+    <img class="logo" src="logo.png" alt="Demanda Infinita">
     <div class="kicker">Método Demanda Infinita®</div>
     <h1>Painel de Mentorados</h1>
     <p class="sub">Entre com o e-mail e senha que você recebeu.</p>
@@ -153,7 +156,7 @@
 
 <div id="app">
   <header class="topbar">
-    <div class="brand">Demanda <span>Infinita</span> · Mentorados</div>
+    <div class="brand"><img src="logo.png" alt="Demanda Infinita"> Demanda <span>Infinita</span> · Mentorados</div>
     <div class="userbox">
       <span id="user-nome"></span>
       <button class="btn-ghost btn-sm" id="btn-logout">Sair</button>
@@ -182,7 +185,7 @@ const DRIVE_CATEGORIAS = [ {id:'posts', nome:'Posts'}, {id:'materiais', nome:'Ma
 
 let PERFIL = null;   // { id, cliente_id, role, nome }
 let ETAPAS = [];     // lista fixa, ordenada
-let ADMIN_ABA = 'lista';
+let ADMIN_ABA = 'dashboard';
 let CAL_ESTADO = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 let DRIVE_ABA_CLIENTE = 'posts';
 let DRIVE_ABA_ADMIN = 'posts';
@@ -652,11 +655,14 @@ async function renderDashboard(){
   const { data: atividades7d } = await sb.from('cli_atividades_diarias').select('*').gte('data', inicioIso).lte('data', hoje);
 
   let completos=0, parciais=0, parados=0;
+  const precisamAtencao = [];
   ativos.forEach(c => {
     const a = (atividadesHoje||[]).find(x=>x.cliente_id===c.id);
     const st = statusAtividade(a, c);
     if(st==='completo') completos++; else if(st==='parcial') parciais++; else parados++;
+    if(st !== 'completo') precisamAtencao.push({ cliente: c, status: st });
   });
+  precisamAtencao.sort((a,b) => (a.status==='vazio'?0:1) - (b.status==='vazio'?0:1));
 
   const concluidasPorCliente = {};
   (progresso||[]).forEach(p => {
@@ -685,6 +691,19 @@ async function renderDashboard(){
       <div class="card"><div class="dash-num" style="color:var(--green)">${completos}</div><div class="desc">em dia hoje</div></div>
       <div class="card"><div class="dash-num" style="color:var(--amber)">${parciais}</div><div class="desc">parcial hoje</div></div>
       <div class="card"><div class="dash-num" style="color:var(--red)">${parados}</div><div class="desc">parados hoje</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Precisam de atenção hoje</h2>
+      <p class="desc">Ainda não completaram o checklist de hoje — clique pra abrir</p>
+      ${precisamAtencao.length ? precisamAtencao.map(x => {
+        const badgeClasse = x.status === 'vazio' ? 'critico' : 'alerta';
+        const badgeTxt = x.status === 'vazio' ? 'parado hoje' : 'parcial hoje';
+        return `<div class="item-lista" style="cursor:pointer" onclick="abrirDetalheCliente(${x.cliente.id})">
+          <div class="txt">${escapeHtml(x.cliente.nome)}</div>
+          <span class="badge ${badgeClasse}">${badgeTxt}</span>
+        </div>`;
+      }).join('') : '<div class="vazio">Todo mundo em dia hoje. 🎉</div>'}
     </div>
 
     <div class="card">
